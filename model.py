@@ -85,8 +85,45 @@ def policy_sequence_logprob(params, token_ids, mask):
     token_logprobs = gather_token_logprobs(log_probs, token_ids)
     return masked_sequence_logprob(token_logprobs, mask)
 
-# Step 8 - sequence_logprob_grad (not yet solved)
-# TODO: implement
+# Step 8 - sequence_logprob_grad
+def sequence_logprob_grad(params, token_ids, mask):
+    embed = params["embed"]
+    W_out = params["W_out"]
+    b_out = params["b_out"]
+
+    logits = policy_token_logits(params, token_ids)
+    probs = softmax(logits, axis=-1)
+
+    batch_size, seq_len = token_ids.shape
+    vocab_size = W_out.shape[1]
+
+    # d log p(y) / d logits = one_hot(y) - softmax(logits)
+    delta = -probs
+    batch_idx = np.arange(batch_size)[:, None]
+    time_idx = np.arange(seq_len)[None, :]
+    delta[batch_idx, time_idx, token_ids] += 1.0
+
+    delta *= mask[..., None]
+
+    hidden = embed[token_ids]
+
+    # Gradient of W_out
+    grad_W_out = np.einsum("btd,btv->dv", hidden, delta)
+
+    # Gradient of b_out
+    grad_b_out = np.sum(delta, axis=(0, 1))
+
+    # Gradient of embed
+    grad_embed = np.zeros_like(embed)
+    grad_hidden = delta @ W_out.T
+
+    np.add.at(grad_embed, token_ids, grad_hidden)
+
+    return {
+        "embed": grad_embed,
+        "W_out": grad_W_out,
+        "b_out": grad_b_out,
+    }
 
 # Step 9 - bradley_terry_loss (not yet solved)
 # TODO: implement
