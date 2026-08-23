@@ -366,8 +366,6 @@ def reward_margin_stats(policy_logprob_chosen, policy_logprob_rejected, ref_logp
     }
 
 # Step 26 - evaluate_dpo
-import numpy as np
-
 def evaluate_dpo(params, pairs, ref_logprobs, beta):
     policy_chosen = []
     policy_rejected = []
