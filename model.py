@@ -204,8 +204,62 @@ def dpo_loss(policy_logprob_chosen, policy_logprob_rejected, ref_logprob_chosen,
     margins = dpo_pair_margin(policy_logprob_chosen, policy_logprob_rejected, ref_logprob_chosen, ref_logprob_rejected, beta)
     return float(np.mean(np.logaddexp(0.0, -margins)))
 
-# Step 17 - dpo_loss_grad (not yet solved)
-# TODO: implement
+# Step 17 - dpo_loss_grad
+def dpo_loss_grad(params, batch, ref_logprobs_batch, beta):
+    chosen_logprob = policy_sequence_logprob(
+        params, batch["chosen_ids"], batch["chosen_mask"]
+    )
+    rejected_logprob = policy_sequence_logprob(
+        params, batch["rejected_ids"], batch["rejected_mask"]
+    )
+
+    ref_chosen = np.asarray(ref_logprobs_batch["chosen"])
+    ref_rejected = np.asarray(ref_logprobs_batch["rejected"])
+
+    margins = dpo_pair_margin(
+        chosen_logprob,
+        rejected_logprob,
+        ref_chosen,
+        ref_rejected,
+        beta,
+    )
+
+    loss = float(np.mean(np.logaddexp(0.0, -margins)))
+
+    batch_size = len(margins)
+
+    # d/dm [-log(sigmoid(m))] = -sigmoid(-m)
+    sigmoid_neg_margin = np.empty_like(margins, dtype=float)
+    positive = margins >= 0
+    sigmoid_neg_margin[positive] = np.exp(-margins[positive]) / (1.0 + np.exp(-margins[positive]))
+    sigmoid_neg_margin[~positive] = 1.0 / (1.0 + np.exp(margins[~positive]))
+
+    coeff = -beta * sigmoid_neg_margin / batch_size
+
+    grads = {
+        key: np.zeros_like(value)
+        for key, value in params.items()
+    }
+
+    for i in range(batch_size):
+        chosen_grads = sequence_logprob_grad(
+            params,
+            batch["chosen_ids"][i:i + 1],
+            batch["chosen_mask"][i:i + 1],
+        )
+
+        rejected_grads = sequence_logprob_grad(
+            params,
+            batch["rejected_ids"][i:i + 1],
+            batch["rejected_mask"][i:i + 1],
+        )
+
+        for key in params:
+            grads[key] += coeff[i] * (
+                chosen_grads[key] - rejected_grads[key]
+            )
+
+    return loss, grads
 
 # Step 18 - dpo_train_step (not yet solved)
 # TODO: implement
