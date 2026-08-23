@@ -193,8 +193,11 @@ def freeze_reference_logprobs(ref_params, pairs):
 def policy_reference_logratio(policy_logprob, reference_logprob):
     return np.asarray(policy_logprob) - np.asarray(reference_logprob)
 
-# Step 15 - dpo_pair_margin (not yet solved)
-# TODO: implement
+# Step 15 - dpo_pair_margin
+def dpo_pair_margin(policy_logprob_chosen, policy_logprob_rejected, ref_logprob_chosen, ref_logprob_rejected, beta):
+    chosen_ratio = np.asarray(policy_logprob_chosen) - np.asarray(ref_logprob_chosen)
+    rejected_ratio = np.asarray(policy_logprob_rejected) - np.asarray(ref_logprob_rejected)
+    return beta * (chosen_ratio - rejected_ratio)
 
 # Step 16 - dpo_loss (not yet solved)
 # TODO: implement
