@@ -130,8 +130,12 @@ def bradley_terry_loss(reward_chosen, reward_rejected):
     margin = np.asarray(reward_chosen) - np.asarray(reward_rejected)
     return np.mean(np.logaddexp(0.0, -margin))
 
-# Step 10 - reward_accuracy (not yet solved)
-# TODO: implement
+# Step 10 - reward_accuracy
+def reward_accuracy(reward_chosen, reward_rejected):
+    reward_chosen = np.asarray(reward_chosen)
+    reward_rejected = np.asarray(reward_rejected)
+
+    return np.mean(reward_chosen > reward_rejected)
 
 # Step 11 - build_preference_pairs (not yet solved)
 # TODO: implement
