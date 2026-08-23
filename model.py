@@ -337,8 +337,9 @@ def ipo_loss(policy_logprob_chosen, policy_logprob_rejected, ref_logprob_chosen,
 
     return float(np.mean((margin - target) ** 2))
 
-# Step 22 - implicit_reward (not yet solved)
-# TODO: implement
+# Step 22 - implicit_reward
+def implicit_reward(policy_logprob, reference_logprob, beta):
+    return beta * (np.asarray(policy_logprob) - np.asarray(reference_logprob))
 
 # Step 23 - preference_accuracy (not yet solved)
 # TODO: implement
