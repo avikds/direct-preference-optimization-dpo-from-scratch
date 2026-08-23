@@ -328,8 +328,14 @@ def length_normalized_logprob(seq_logprob, mask):
     token_counts = np.sum(mask, axis=1)
     return seq_logprob / token_counts
 
-# Step 21 - ipo_loss (not yet solved)
-# TODO: implement
+# Step 21 - ipo_loss
+def ipo_loss(policy_logprob_chosen, policy_logprob_rejected, ref_logprob_chosen, ref_logprob_rejected, beta):
+    policy_ratio = np.asarray(policy_logprob_chosen) - np.asarray(policy_logprob_rejected)
+    ref_ratio = np.asarray(ref_logprob_chosen) - np.asarray(ref_logprob_rejected)
+    margin = policy_ratio - ref_ratio
+    target = 1.0 / (2.0 * beta)
+
+    return float(np.mean((margin - target) ** 2))
 
 # Step 22 - implicit_reward (not yet solved)
 # TODO: implement
