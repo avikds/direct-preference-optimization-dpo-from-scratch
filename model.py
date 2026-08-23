@@ -150,8 +150,29 @@ def build_preference_pairs(prompts, chosen_ids, rejected_ids, chosen_mask, rejec
         for i in range(len(prompts))
     ]
 
-# Step 12 - sample_preference_batch (not yet solved)
-# TODO: implement
+# Step 12 - sample_preference_batch
+def sample_preference_batch(pairs, batch_size, rng=None):
+    if rng is None:
+        rng = np.random.default_rng()
+
+    if not pairs or batch_size <= 0:
+        raise ValueError("pairs must be non-empty and batch_size must be positive")
+
+    replace = batch_size > len(pairs)
+    indices = rng.choice(len(pairs), size=batch_size, replace=replace)
+    sampled = [pairs[i] for i in indices]
+
+    batch = {
+        "chosen_ids": np.stack([pair["chosen_ids"] for pair in sampled]),
+        "rejected_ids": np.stack([pair["rejected_ids"] for pair in sampled]),
+        "chosen_mask": np.stack([pair["chosen_mask"] for pair in sampled]),
+        "rejected_mask": np.stack([pair["rejected_mask"] for pair in sampled]),
+    }
+
+    if "prompt" in sampled[0]:
+        batch["prompt"] = np.array([pair["prompt"] for pair in sampled])
+
+    return batch
 
 # Step 13 - freeze_reference_logprobs (not yet solved)
 # TODO: implement
