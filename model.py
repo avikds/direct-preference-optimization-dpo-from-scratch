@@ -407,25 +407,17 @@ def run_dpo_pipeline(vocab_size, d_model, prompts, chosen_ids, rejected_ids, cho
         rng = np.random.default_rng()
 
     params = init_policy_params(vocab_size, d_model, rng=rng)
-
     pairs = build_preference_pairs(prompts, chosen_ids, rejected_ids, chosen_mask, rejected_mask)
-
-    ref_params = {key: value.copy() for key, value in params.items()}
-
+    ref_params = {k: v.copy() for k, v in params.items()}
     frozen = freeze_reference_logprobs(ref_params, pairs)
 
     ref_logprobs = {
-        "chosen": np.asarray([item["chosen"] for item in frozen], dtype=float),
-        "rejected": np.asarray([item["rejected"] for item in frozen], dtype=float),
+        "chosen": np.asarray([x["chosen"] for x in frozen], dtype=float),
+        "rejected": np.asarray([x["rejected"] for x in frozen], dtype=float),
     }
 
     params, history = train_dpo(params, pairs, ref_logprobs, beta, learning_rate, num_steps, batch_size, rng=rng)
-
     eval_metrics = evaluate_dpo(params, pairs, ref_logprobs, beta)
 
-    return {
-        "params": params,
-        "history": history,
-        "eval_metrics": eval_metrics,
-    }
+    return {"params": params, "history": history, "eval_metrics": eval_metrics}
 
