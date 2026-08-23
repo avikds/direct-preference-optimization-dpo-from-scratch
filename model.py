@@ -56,8 +56,18 @@ def masked_sequence_logprob(token_logprobs, mask):
     # Zero out masked positions, then sum over the sequence dimension.
     return np.sum(token_logprobs * mask, axis=1)
 
-# Step 5 - init_policy_params (not yet solved)
-# TODO: implement
+# Step 5 - init_policy_params
+def init_policy_params(vocab_size, d_model, rng=None):
+    if rng is None:
+        rng = np.random.default_rng()
+
+    scale = 0.02
+
+    return {
+        "embed": rng.normal(0.0, scale, size=(vocab_size, d_model)),
+        "W_out": rng.normal(0.0, scale, size=(d_model, vocab_size)),
+        "b_out": np.zeros(vocab_size),
+    }
 
 # Step 6 - policy_token_logits (not yet solved)
 # TODO: implement
