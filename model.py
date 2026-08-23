@@ -365,8 +365,71 @@ def reward_margin_stats(policy_logprob_chosen, policy_logprob_rejected, ref_logp
         "frac_positive": float(np.mean(margins > 0)),
     }
 
-# Step 26 - evaluate_dpo (not yet solved)
-# TODO: implement
+# Step 26 - evaluate_dpo
+import numpy as np
+
+def evaluate_dpo(params, pairs, ref_logprobs, beta):
+    policy_chosen = []
+    policy_rejected = []
+
+    for pair in pairs:
+        chosen_lp = policy_sequence_logprob(
+            params,
+            np.asarray(pair["chosen_ids"])[None, :],
+            np.asarray(pair["chosen_mask"])[None, :],
+        )
+
+        rejected_lp = policy_sequence_logprob(
+            params,
+            np.asarray(pair["rejected_ids"])[None, :],
+            np.asarray(pair["rejected_mask"])[None, :],
+        )
+
+        policy_chosen.append(float(chosen_lp))
+        policy_rejected.append(float(rejected_lp))
+
+    policy_chosen = np.asarray(policy_chosen, dtype=float)
+    policy_rejected = np.asarray(policy_rejected, dtype=float)
+
+    if isinstance(ref_logprobs, dict):
+        ref_chosen = np.asarray(ref_logprobs["chosen"], dtype=float)
+        ref_rejected = np.asarray(ref_logprobs["rejected"], dtype=float)
+    else:
+        ref_chosen = np.asarray([x["chosen"] for x in ref_logprobs], dtype=float)
+        ref_rejected = np.asarray([x["rejected"] for x in ref_logprobs], dtype=float)
+
+    loss = dpo_loss(policy_chosen, policy_rejected, ref_chosen, ref_rejected, beta)
+
+    accuracy = preference_accuracy(
+        policy_chosen,
+        policy_rejected,
+        ref_chosen,
+        ref_rejected,
+        beta,
+    )
+
+    # KL diagnostic is averaged over all chosen and rejected sequences.
+    kl = kl_to_reference(
+        np.concatenate([policy_chosen, policy_rejected]),
+        np.concatenate([ref_chosen, ref_rejected]),
+    )
+
+    stats = reward_margin_stats(
+        policy_chosen,
+        policy_rejected,
+        ref_chosen,
+        ref_rejected,
+        beta,
+    )
+
+    return {
+        "dpo_loss": float(loss),
+        "preference_accuracy": float(accuracy),
+        "kl_to_reference": float(kl),
+        "mean_margin": float(stats["mean_margin"]),
+        "std_margin": float(stats["std_margin"]),
+        "frac_positive": float(stats["frac_positive"]),
+    }
 
 # Step 27 - run_dpo_pipeline (not yet solved)
 # TODO: implement
