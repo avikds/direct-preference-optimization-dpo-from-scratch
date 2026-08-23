@@ -341,8 +341,12 @@ def ipo_loss(policy_logprob_chosen, policy_logprob_rejected, ref_logprob_chosen,
 def implicit_reward(policy_logprob, reference_logprob, beta):
     return beta * (np.asarray(policy_logprob) - np.asarray(reference_logprob))
 
-# Step 23 - preference_accuracy (not yet solved)
-# TODO: implement
+# Step 23 - preference_accuracy
+def preference_accuracy(policy_logprob_chosen, policy_logprob_rejected, ref_logprob_chosen, ref_logprob_rejected, beta):
+    chosen_reward = implicit_reward(policy_logprob_chosen, ref_logprob_chosen, beta)
+    rejected_reward = implicit_reward(policy_logprob_rejected, ref_logprob_rejected, beta)
+
+    return float(np.mean(chosen_reward > rejected_reward))
 
 # Step 24 - kl_to_reference (not yet solved)
 # TODO: implement
