@@ -365,56 +365,32 @@ def reward_margin_stats(policy_logprob_chosen, policy_logprob_rejected, ref_logp
 def evaluate_dpo(params, pairs, ref_logprobs, beta):
     policy_chosen = []
     policy_rejected = []
+    ref_chosen = []
+    ref_rejected = []
 
-    for pair in pairs:
-        chosen_lp = policy_sequence_logprob(
-            params,
-            np.asarray(pair["chosen_ids"])[None, :],
-            np.asarray(pair["chosen_mask"])[None, :],
-        )
+    for i, pair in enumerate(pairs):
+        chosen_lp = policy_sequence_logprob(params, np.asarray(pair["chosen_ids"])[None, :], np.asarray(pair["chosen_mask"])[None, :])
+        rejected_lp = policy_sequence_logprob(params, np.asarray(pair["rejected_ids"])[None, :], np.asarray(pair["rejected_mask"])[None, :])
 
-        rejected_lp = policy_sequence_logprob(
-            params,
-            np.asarray(pair["rejected_ids"])[None, :],
-            np.asarray(pair["rejected_mask"])[None, :],
-        )
+        policy_chosen.append(np.asarray(chosen_lp).reshape(-1).item(0))
+        policy_rejected.append(np.asarray(rejected_lp).reshape(-1).item(0))
 
-        policy_chosen.append(float(chosen_lp))
-        policy_rejected.append(float(rejected_lp))
+        if isinstance(ref_logprobs, dict):
+            ref_chosen.append(np.asarray(ref_logprobs["chosen"])[i].item())
+            ref_rejected.append(np.asarray(ref_logprobs["rejected"])[i].item())
+        else:
+            ref_chosen.append(float(np.asarray(ref_logprobs[i]["chosen"]).reshape(-1).item(0)))
+            ref_rejected.append(float(np.asarray(ref_logprobs[i]["rejected"]).reshape(-1).item(0)))
 
     policy_chosen = np.asarray(policy_chosen, dtype=float)
     policy_rejected = np.asarray(policy_rejected, dtype=float)
-
-    if isinstance(ref_logprobs, dict):
-        ref_chosen = np.asarray(ref_logprobs["chosen"], dtype=float)
-        ref_rejected = np.asarray(ref_logprobs["rejected"], dtype=float)
-    else:
-        ref_chosen = np.asarray([x["chosen"] for x in ref_logprobs], dtype=float)
-        ref_rejected = np.asarray([x["rejected"] for x in ref_logprobs], dtype=float)
+    ref_chosen = np.asarray(ref_chosen, dtype=float)
+    ref_rejected = np.asarray(ref_rejected, dtype=float)
 
     loss = dpo_loss(policy_chosen, policy_rejected, ref_chosen, ref_rejected, beta)
-
-    accuracy = preference_accuracy(
-        policy_chosen,
-        policy_rejected,
-        ref_chosen,
-        ref_rejected,
-        beta,
-    )
-
-    # KL diagnostic is averaged over all chosen and rejected sequences.
-    kl = kl_to_reference(
-        np.concatenate([policy_chosen, policy_rejected]),
-        np.concatenate([ref_chosen, ref_rejected]),
-    )
-
-    stats = reward_margin_stats(
-        policy_chosen,
-        policy_rejected,
-        ref_chosen,
-        ref_rejected,
-        beta,
-    )
+    accuracy = preference_accuracy(policy_chosen, policy_rejected, ref_chosen, ref_rejected, beta)
+    kl = kl_to_reference(np.concatenate([policy_chosen, policy_rejected]), np.concatenate([ref_chosen, ref_rejected]))
+    stats = reward_margin_stats(policy_chosen, policy_rejected, ref_chosen, ref_rejected, beta)
 
     return {
         "dpo_loss": float(loss),
