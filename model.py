@@ -179,12 +179,24 @@ def freeze_reference_logprobs(ref_params, pairs):
     frozen = []
 
     for pair in pairs:
-        chosen_logprob = policy_sequence_logprob(ref_params, pair["chosen_ids"][None, :], pair["chosen_mask"][None, :])[0]
-        rejected_logprob = policy_sequence_logprob(ref_params, pair["rejected_ids"][None, :], pair["rejected_mask"][None, :])[0]
+        chosen = policy_sequence_logprob(
+            ref_params,
+            np.asarray(pair["chosen_ids"])[None, :],
+            np.asarray(pair["chosen_mask"])[None, :],
+        )
+
+        rejected = policy_sequence_logprob(
+            ref_params,
+            np.asarray(pair["rejected_ids"])[None, :],
+            np.asarray(pair["rejected_mask"])[None, :],
+        )
+
+        chosen = float(np.asarray(chosen).reshape(-1)[0])
+        rejected = float(np.asarray(rejected).reshape(-1)[0])
 
         frozen.append({
-            "chosen": chosen_logprob,
-            "rejected": rejected_logprob,
+            "chosen": chosen,
+            "rejected": rejected,
         })
 
     return frozen
@@ -429,6 +441,31 @@ def evaluate_dpo(params, pairs, ref_logprobs, beta):
         "frac_positive": float(stats["frac_positive"]),
     }
 
-# Step 27 - run_dpo_pipeline (not yet solved)
-# TODO: implement
+# Step 27 - run_dpo_pipeline
+def run_dpo_pipeline(vocab_size, d_model, prompts, chosen_ids, rejected_ids, chosen_mask, rejected_mask, beta, learning_rate, num_steps, batch_size, rng=None):
+    if rng is None:
+        rng = np.random.default_rng()
+
+    params = init_policy_params(vocab_size, d_model, rng=rng)
+
+    pairs = build_preference_pairs(prompts, chosen_ids, rejected_ids, chosen_mask, rejected_mask)
+
+    ref_params = {key: value.copy() for key, value in params.items()}
+
+    frozen = freeze_reference_logprobs(ref_params, pairs)
+
+    ref_logprobs = {
+        "chosen": np.asarray([item["chosen"] for item in frozen], dtype=float),
+        "rejected": np.asarray([item["rejected"] for item in frozen], dtype=float),
+    }
+
+    params, history = train_dpo(params, pairs, ref_logprobs, beta, learning_rate, num_steps, batch_size, rng=rng)
+
+    eval_metrics = evaluate_dpo(params, pairs, ref_logprobs, beta)
+
+    return {
+        "params": params,
+        "history": history,
+        "eval_metrics": eval_metrics,
+    }
 
