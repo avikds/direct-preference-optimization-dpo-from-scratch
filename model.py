@@ -35,8 +35,18 @@ def softmax(logits, axis=-1):
     exp_shifted = np.exp(shifted_logits)
     return exp_shifted / np.sum(exp_shifted, axis=axis, keepdims=True)
 
-# Step 3 - gather_token_logprobs (not yet solved)
-# TODO: implement
+# Step 3 - gather_token_logprobs
+def gather_token_logprobs(log_probs, token_ids):
+    # log_probs shape: (B, T, V)
+    # token_ids shape: (B, T)
+    # Select the vocabulary log-probability corresponding to each token.
+    log_probs = np.asarray(log_probs)
+    token_ids = np.asarray(token_ids)
+
+    batch_indices = np.arange(log_probs.shape[0])[:, None]
+    time_indices = np.arange(log_probs.shape[1])[None, :]
+
+    return log_probs[batch_indices, time_indices, token_ids]
 
 # Step 4 - masked_sequence_logprob (not yet solved)
 # TODO: implement
