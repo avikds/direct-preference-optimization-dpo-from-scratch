@@ -38,6 +38,17 @@ python scaffold.py
 - [x] **26.** evaluate_dpo
 - [x] **27.** run_dpo_pipeline
 
----
+## Results
 
-Built on Deep-ML.
+```
+DPO pair margins: [ 0.05 -0.04  0.04 -0.03]
+DPO loss: 0.690853
+IPO loss: 24.665
+preference accuracy (toy): 0.5
+reward margin stats (toy): {'mean_margin': 0.004999999999999994, 'std_margin': 0.04031128874149275, 'frac_positive': 0.5}
+
+DPO training: loss 0.6931 -> 0.0894
+eval preference_accuracy: 1.0
+eval mean reward margin : 2.4207
+eval dpo_loss           : 0.0864
+```
